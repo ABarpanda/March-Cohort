@@ -11,6 +11,51 @@
 
   Here are a few examples using notional tools:
   ---
+  Task: Generate a weather report and travel itinerary for Goa.
+
+  Thought: I will gather weather data and the best places to visit, then summarize them.
+  Code:
+  ```py
+  import datetime
+  current_date = datetime.datetime.now()
+  print("Current Date:", current_date)
+
+  # Calculate trip dates
+  trip_start_date = current_date + datetime.timedelta(days=7)
+  trip_end_date = trip_start_date + datetime.timedelta(days=3)
+  print(f"Trip Start Date: {trip_start_date}, Trip End Date: {trip_end_date}")
+
+  # Weather forecast
+  goa_lat, goa_long = 15.4989, 73.8278
+  for n in range((trip_end_date - trip_start_date).days + 1):
+      date = trip_start_date + datetime.timedelta(n)
+      forecast = one_day_forecast(lat=goa_lat, long=goa_long, target_date=date.strftime("%Y-%m-%d"))
+      print(f"Weather Forecast on {date.strftime('%Y-%m-%d')}: {forecast}")
+
+  # Places to visit
+  places_to_visit = web_search(query="best places to visit in Goa")
+  print("Places to Visit in Goa:", places_to_visit)
+
+  # Create an itinerary
+  itinerary = []
+  for n in range((trip_end_date - trip_start_date).days + 1):
+      date = trip_start_date + datetime.timedelta(n)
+      itinerary.append({
+          "date": date.strftime("%Y-%m-%d"),
+          "activities": ["Explore beaches", "Try local cuisine"],
+          "places_to_visit": ["Palolem Beach", "Baga Beach"]
+      })
+  print("Itinerary:", itinerary)
+
+  # Capture and return all outputs
+  final_answer("\n".join([
+      f"Trip Duration: {trip_start_date} to {trip_end_date}",
+      "Weather Forecasts:\n" + "\n".join(str(f) for f in forecast),
+      f"Places to Visit: {places_to_visit}",
+      f"Itinerary: {itinerary}"
+  ]))
+  ```<end_code>
+  ---
   Task: "Generate an image of the oldest person in this document."
 
   Thought: I will proceed step by step and use the following tools: `document_qa` to find the oldest person in the document, then `image_generator` to generate an image according to the answer.
@@ -201,7 +246,7 @@
 
     Now for the given task, develop a step-by-step high-level plan taking into account the above inputs and list of facts.
     This plan should involve individual tasks based on the available tools, that if executed correctly will yield the correct answer.
-    Do not skip steps, do not add any superfluous steps. Only write the high-level plan, DO NOT DETAIL INDIVIDUAL TOOL CALLS.
+    Do not skip steps. Make as many steps as possible. Make small steps. Write a high-level plan, DETAIL INDIVIDUAL TOOL CALLS.
     After writing the final step of the plan, write the '\n<end_plan>' tag and stop there.
 
     Here is your task:
@@ -295,7 +340,7 @@
     Now for the given task, develop a step-by-step high-level plan taking into account the above inputs and list of facts.
     This plan should involve individual tasks based on the available tools, that if executed correctly will yield the correct answer.
     Beware that you have {remaining_steps} steps remaining.
-    Do not skip steps, do not add any superfluous steps. Only write the high-level plan, DO NOT DETAIL INDIVIDUAL TOOL CALLS.
+    Do not skip steps. Make as many steps as possible. Make small steps. Write a high-level plan, DETAIL INDIVIDUAL TOOL CALLS.
     After writing the final step of the plan, write the '\n<end_plan>' tag and stop there.
 
     Now write your new plan below.

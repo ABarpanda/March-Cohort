@@ -8,7 +8,9 @@ class FinalAnswerTool(Tool):
     output_type = "any"
 
     def forward(self, answer: Any) -> Any:
+        print("✅ Final Output:", answer)
         return answer
 
     def __init__(self, *args, **kwargs):
-        self.is_initialized = False
+        super().__init__(*args, **kwargs)
+        self.is_initialized = True
