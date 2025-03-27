@@ -174,6 +174,8 @@ for obj in vars(mytools).values():
     if isinstance(obj, Tool):
         tool_list.append(obj)
         # print(obj.name)
+tool_list.remove(mytools.trainBetweenStations)
+tool_list.remove(mytools.checkSeatAvailability)
 
 # Output the valid tools
 # for i in tool_list:
