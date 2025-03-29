@@ -14,3 +14,10 @@ class FinalAnswerTool(Tool):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.is_initialized = True
+
+    def __call__(self, answer):
+        # Capture and log the full output
+        with open("final_output.json", "w") as file:
+            file.write(str(answer))
+        print("Final Answer:", answer)
+        return answer

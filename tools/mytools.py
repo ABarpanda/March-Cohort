@@ -2,6 +2,8 @@ from smolagents import tool
 import requests
 from datetime import datetime, date, timedelta
 import json
+import os
+from dotenv import load_dotenv
 
 @tool
 def multiply_two_numbers(arg1:int, arg2:int)-> str: #it's import to specify the return type
@@ -13,6 +15,7 @@ def multiply_two_numbers(arg1:int, arg2:int)-> str: #it's import to specify the 
     """
     return arg1*arg2
 
+#region #! Weather API Tools
 @tool
 def next_seven_day_forecast(lat: float, long: float) -> list:
     """Fetches the weather forecast for the next seven days.
@@ -103,7 +106,6 @@ def one_day_forecast(lat: float, long: float, target_date: str) -> list:
 
     return {"error": "Unable to fetch data", "status_code": response.status_code}
 
-
 @tool
 def ambient_judgement(lat: float, long: float, target_date: str) -> list:
     """Fetches weather data for four days before and after a specified date.
@@ -153,11 +155,9 @@ def ambient_judgement(lat: float, long: float, target_date: str) -> list:
 
     return response.json()
 
+#endregion
 
-headers = {
-    "x-rapidapi-key": "6e21947f9fmshee9ad4e3e587570p17e864jsn0958834a65e2",
-    "x-rapidapi-host": "irctc1.p.rapidapi.com"
-}
+#region #! Train API Tools
 
 @tool
 def trainBetweenStations(fromStationCode: str, toStationCode: str, dateOfJourney: str) -> str:
@@ -171,7 +171,12 @@ def trainBetweenStations(fromStationCode: str, toStationCode: str, dateOfJourney
     Returns:
         JSON-formatted string with train information.
     """
+    load_dotenv()
     url = "https://irctc1.p.rapidapi.com/api/v3/trainBetweenStations"
+    headers = {
+        "x-rapidapi-key": os.getenv("rapidapi_api_key"),
+        "x-rapidapi-host": "irctc1.p.rapidapi.com"
+    }
     querystring = {"fromStationCode": fromStationCode, "toStationCode": toStationCode, "dateOfJourney": dateOfJourney}
 
     response = requests.get(url, headers=headers, params=querystring)
@@ -192,12 +197,35 @@ def checkSeatAvailability(classType: str, quota: str, fromStationCode: str, toSt
     Returns:
         JSON-formatted string with seat availability.
     """
+    load_dotenv()
     url = "https://irctc1.p.rapidapi.com/api/v1/checkSeatAvailability"
+    headers = {
+        "x-rapidapi-key": os.getenv("rapidapi_api_key"),
+        "x-rapidapi-host": "irctc1.p.rapidapi.com"
+    }
     querystring = {"classType": classType, "fromStationCode": fromStationCode, "quota": quota, "toStationCode": toStationCode, "trainNo": trainNo, "date": date}
 
     response = requests.get(url, headers=headers, params=querystring)
     return json.dumps(response.json(), indent=4)
 
+#endregion
+
+#region #! Booking API Tools
+
+# @tool
+# def 
+# import requests
+
+# url = "https://booking-com15.p.rapidapi.com/api/v1/meta/getLocations"
+
+# headers = {
+# 	"x-rapidapi-key": os.getenv("rapidapi_api_key"),
+# 	"x-rapidapi-host": "booking-com15.p.rapidapi.com"
+# }
+
+# response = requests.get(url, headers=headers)
+
+# print(response.json())
 
 if __name__=="__main__":
     print(trainBetweenStations("ROU","JSG","2025-03-23"))

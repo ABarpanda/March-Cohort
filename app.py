@@ -1,4 +1,4 @@
-from smolagents import CodeAgent, DuckDuckGoSearchTool, load_tool, tool, Tool
+from smolagents import CodeAgent, DuckDuckGoSearchTool, tool, Tool
 import datetime
 import requests
 from dotenv import load_dotenv
@@ -67,34 +67,7 @@ class TogetherApiModel:
             # Ensure the prompt is valid
             if not isinstance(prompt_text, str) or not prompt_text.strip():
                 raise ValueError(f"Invalid prompt after extraction: {prompt_text} (Type: {type(prompt_text)})")
-
-            '''
-            client = Together()
-            response = client.completions.create(
-                model="mistralai/Mixtral-8x7B-v0.1",
-                prompt="[]",
-                max_tokens=None,
-                temperature=0.7,
-                top_p=0.7,
-                top_k=50,
-                repetition_penalty=1,
-                stop=[],
-                stream=True
-            )
-            for token in response:
-                if hasattr(token, 'choices'):
-                    print(token.choices[0].delta.content, end='', flush=True)
-            '''
-
-            # Properly formatted messages list
-            '''
-            messages=
-                [
-                    {"role":"user","content":"Hi\n"},
-                    {"role":"assistant","content":"It's nice to meet you. Is there something I can help you with or would you like to chat?"},
-                    {"role":"user","content":""}
-                ]
-            '''
+            
             messages = [{"role": "user", "content": prompt_text}]
             # print(f"Sending prompt to Together AI: {messages}")
 
@@ -107,12 +80,8 @@ class TogetherApiModel:
                 **kwargs
             )
 
-            # Log the raw response for debugging
-            # print("Raw Response:", response)
-
-            # Extract the content safely
             if response.choices:
-                return response.choices[0].message#.content
+                return response.choices[0].message
 
             return "Error: No valid choices in the response."
 
@@ -120,7 +89,6 @@ class TogetherApiModel:
             print(f"Error generating output: {e}")
             return "Error: Model generation failed."
 
-# Below is an example of a tool that does nothing. Amaze us with your creativity!
 @tool
 def my_custom_tool(arg1: int, arg2: int) -> str:
     """A tool that multiplies 2 numbers
@@ -143,56 +111,48 @@ def get_current_time_in_timezone(timezone: str) -> str:
     except Exception as e:
         return f"Error fetching time for timezone '{timezone}': {str(e)}"
 
-# Final Answer Tool
-final_answer = FinalAnswerTool()
+def Main(destination, start_date, end_date, number_of_people, purpose, budget, location, mode_of_transport):
+# def Main():
 
-# Initialize Together AI Model
-model = TogetherApiModel(
-    model_id='meta-llama/Llama-3.3-70B-Instruct-Turbo',#'mistralai/Mixtral-8x7B-Instruct-v0.1',  # Use a supported Together AI model
-    temperature=0.5,
-    max_tokens=2096
-)
+    final_answer = FinalAnswerTool()
 
+    model = TogetherApiModel(
+        model_id='meta-llama/Llama-3.3-70B-Instruct-Turbo',
+        temperature=0.5,
+        max_tokens=2096
+    )
 
-# Import tool from Hugging Face Hub
-image_generation_tool = load_tool("agents-course/text-to-image", trust_remote_code=True)
+    with open("../prompts.yaml", 'r') as stream:
+        prompt_templates = yaml.safe_load(stream)
 
-# Load prompt templates
-with open("prompts.yaml", 'r') as stream:
-    prompt_templates = yaml.safe_load(stream)
+    tool_list = [final_answer, DuckDuckGoSearchTool(), get_current_time_in_timezone] 
 
-# Collect all tools from mytools
-tool_list = [final_answer, DuckDuckGoSearchTool(), get_current_time_in_timezone]  # Basic tools
+    for obj in vars(mytools).values():
+        if isinstance(obj, Tool):
+            tool_list.append(obj)
+            # print(obj.name)
+    tool_list.remove(mytools.trainBetweenStations)
+    tool_list.remove(mytools.checkSeatAvailability)
 
-# Dynamically add all callable tools from mytools
-# tool_list.extend([obj for obj in vars(mytools).values() if callable(obj)])
-# tool_list.sort()
-# Remove initial non-tool callables if needed
-# for _ in range(4):
-#     tool_list.pop(0)
-for obj in vars(mytools).values():
-    if isinstance(obj, Tool):
-        tool_list.append(obj)
-        # print(obj.name)
-tool_list.remove(mytools.trainBetweenStations)
-tool_list.remove(mytools.checkSeatAvailability)
+    print(prompt_templates)
+    prompt_templates["user_prompt"] = f"Plan a trip to {destination} for {number_of_people} people from {start_date} to {end_date} and prepare a custom itenary in the given format. They are currently in {location} and want to travel by {mode_of_transport} for {purpose}. Divide the budget of {budget} accordingly."
 
-# Output the valid tools
-# for i in tool_list:
-#     print(i.name)
+    agent = CodeAgent(
+        model=model,
+        tools=tool_list,
+        max_steps=10,
+        verbosity_level=3,
+        grammar=None,
+        planning_interval=None,
+        name="Om Tours Travel Agent",
+        description="A travel agent to prepare custom itenaries",
+        prompt_templates=prompt_templates
+    )
+    with open("../final_output.json","r") as file:
+        itenary_json = file.read()
 
-# Initialize Code Agent
-agent = CodeAgent(
-    model=model,
-    tools=tool_list,
-    max_steps=6,
-    verbosity_level=1,
-    grammar=None,
-    planning_interval=None,
-    name="Om Tours Travel Agent",
-    description="A travel agent to prepare custom itenaries",
-    prompt_templates=prompt_templates
-)
+    # print(itenary_json)
+    return itenary_json
 
-
-GradioUI(agent).launch()
+if __name__=="__main__":
+    Main()
