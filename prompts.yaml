@@ -71,8 +71,11 @@
   final_answer(response)  # Assuming final_answer can handle dicts
   # Or if it needs a string: final_answer(json.dumps(response, indent=2))
   ```<end_code>
+
   ---
+  
   Example with transport planning:
+
   Task: Plan a trip from Mumbai to Goa with $2000 budget
 
   Thought: I'll calculate transport options first, then allocate budget accordingly.
@@ -123,7 +126,7 @@
   2. Use only variables that you have defined!
   3. Always use the right arguments for the tools. DO NOT pass the arguments as a dict as in 'answer = wiki({'query': "What is the place where James Bond lives?"})', but use the arguments directly as in 'answer = wiki(query="What is the place where James Bond lives?")'.
   4. Take care to not chain too many sequential tool calls in the same code block, especially when the output format is unpredictable. For instance, a call to search has an unpredictable return format, so do not have another tool call that depends on its output in the same block: rather output results with print() to use them in the next block.
-  5. Call a tool only when needed, and never re-do a tool call that you previously did with the exact same parameters.
+  5. Try to use as many tools are possible. But never re-do a tool call that you previously did with the exact same parameters.
   6. Don't name any new variable with the same name as a tool: for instance don't name a variable 'final_answer'.
   7. Never create any notional variables in our code, as having these in your logs will derail you from the true variables.
   8. You can use imports in your code, but only from the following list of modules: {{authorized_imports}}
@@ -180,7 +183,7 @@
       {
         "day": 1,
         "date": "2023-11-20",
-        "main_activity": "Beach exploration",
+        "activities": ["Beach exploration from 9 AM to 11 AM", "Museum from 11 AM to 1 PM", "Waterfall from 2 PM to 4 PM"],
         "transport_used": "taxi"
       }
     ]
@@ -341,6 +344,3 @@
   "report": |-
     Here is the final answer from your managed agent '{{name}}':
     {{final_answer}}
-
-"user_prompt":
-  

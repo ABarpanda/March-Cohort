@@ -9,6 +9,7 @@ from tools.final_answer import FinalAnswerTool
 from together import Together
 import tools.mytools as mytools
 from Gradio_UI import GradioUI
+import json
 
 class TogetherApiModel:
     def __init__(self, model_id: str, temperature: float = 0.7, max_tokens: int = 2048):
@@ -111,6 +112,20 @@ def get_current_time_in_timezone(timezone: str) -> str:
     except Exception as e:
         return f"Error fetching time for timezone '{timezone}': {str(e)}"
 
+def safe_json_parse(json_str):
+    try:
+        # First try direct parse
+        return json.loads(json_str)
+    except json.JSONDecodeError:
+        try:
+            fixed = json_str.replace("\'", '\"')  # Single to double quotes
+            fixed = fixed.replace(",}", "}")    # Remove trailing commas
+            return (fixed)
+        except json.JSONDecodeError as e:
+            print(f"Could not parse JSON. Error: {e}")
+            print(f"Problematic JSON: {json_str[:200]}...")
+            return None
+
 def Main(destination, start_date, end_date, number_of_people, purpose, budget, location, mode_of_transport):
 # def Main():
 
@@ -122,7 +137,7 @@ def Main(destination, start_date, end_date, number_of_people, purpose, budget, l
         max_tokens=2096
     )
 
-    with open("../prompts.yaml", 'r') as stream:
+    with open("prompts.yaml", 'r') as stream:
         prompt_templates = yaml.safe_load(stream)
 
     tool_list = [final_answer, DuckDuckGoSearchTool(), get_current_time_in_timezone] 
@@ -134,12 +149,13 @@ def Main(destination, start_date, end_date, number_of_people, purpose, budget, l
     tool_list.remove(mytools.trainBetweenStations)
     tool_list.remove(mytools.checkSeatAvailability)
 
-    print(prompt_templates)
-    prompt_templates["user_prompt"] = f"Plan a trip to {destination} for {number_of_people} people from {start_date} to {end_date} and prepare a custom itenary in the given format. They are currently in {location} and want to travel by {mode_of_transport} for {purpose}. Divide the budget of {budget} accordingly."
+    # prompt_templates["system_prompt"] = prompt_templates["system_prompt"] + f"Plan a trip to {destination} for {number_of_people} people from {start_date} to {end_date} and prepare a custom itenary in the given format. They are currently in {location} and want to travel by {mode_of_transport} for {purpose}. Divide the budget of {budget} accordingly."
+    # print(prompt_templates["system_prompt"])
 
     agent = CodeAgent(
         model=model,
         tools=tool_list,
+        additional_authorized_imports = ["json"],
         max_steps=10,
         verbosity_level=3,
         grammar=None,
@@ -148,11 +164,13 @@ def Main(destination, start_date, end_date, number_of_people, purpose, budget, l
         description="A travel agent to prepare custom itenaries",
         prompt_templates=prompt_templates
     )
-    with open("../final_output.json","r") as file:
+    with open("final_output.json","r") as file:
         itenary_json = file.read()
 
-    # print(itenary_json)
-    return itenary_json
+    response = agent.run(f"Plan a trip to {destination} for {number_of_people} people from {start_date} to {end_date} and prepare a custom itenary in the given format. They are currently in {location} and want to travel by {mode_of_transport} for {purpose}. Divide the budget of {budget} accordingly.")
+    # GradioUI(agent).launch()
+    return json.loads(str(safe_json_parse(str(response))))
+
 
 if __name__=="__main__":
     Main()
