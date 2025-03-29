@@ -33,8 +33,8 @@ def safe_json_parse(json_str):
         return json.loads(json_str)
     except json.JSONDecodeError:
         try:
-            fixed = json_str.replace("\'", '\"')  # Single to double quotes
-            fixed = fixed.replace(",}", "}")    # Remove trailing commas
+            fixed = json_str.replace("\'", '\"')
+            fixed = fixed.replace(",}", "}")
             return json.loads(fixed)
         except json.JSONDecodeError as e:
             print(f"Could not parse JSON. Error: {e}")
