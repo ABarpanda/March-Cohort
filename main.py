@@ -164,8 +164,13 @@ def Main(destination, start_date, end_date, number_of_people, purpose, budget, l
     with open("final_output.json","r") as file:
         itenary_json = file.read()
     
-    if 'pandas' in sys.modules:
-        print("Pandas is imported by:", sys.modules['pandas'].__file__)
+    print(itenary_json)
+    if type(itenary_json)==str:
+        print(json.loads(itenary_json))
+    elif type(itenary_json)==dict:
+        print(json.load(itenary_json))
+    else:
+        print("Itenary Json is neither dict nor str")
 
     response = agent.run(f"Plan a trip to {destination} for {number_of_people} people from {start_date} to {end_date} and prepare a custom itenary in the given format. They are currently in {location} and want to travel by {mode_of_transport} for {purpose}. Divide the budget of {budget} accordingly.")
     # GradioUI(agent).launch()
