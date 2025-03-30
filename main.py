@@ -3,6 +3,7 @@ import datetime
 import requests
 from dotenv import load_dotenv
 import os
+import sys
 import pytz
 import yaml
 from tools.final_answer import FinalAnswerTool
@@ -149,9 +150,6 @@ def Main(destination, start_date, end_date, number_of_people, purpose, budget, l
     tool_list.remove(mytools.trainBetweenStations)
     tool_list.remove(mytools.checkSeatAvailability)
 
-    # prompt_templates["system_prompt"] = prompt_templates["system_prompt"] + f"Plan a trip to {destination} for {number_of_people} people from {start_date} to {end_date} and prepare a custom itenary in the given format. They are currently in {location} and want to travel by {mode_of_transport} for {purpose}. Divide the budget of {budget} accordingly."
-    # print(prompt_templates["system_prompt"])
-
     agent = CodeAgent(
         model=model,
         tools=tool_list,
@@ -166,6 +164,9 @@ def Main(destination, start_date, end_date, number_of_people, purpose, budget, l
     )
     with open("final_output.json","r") as file:
         itenary_json = file.read()
+    
+    if 'pandas' in sys.modules:
+        print("Pandas is imported by:", sys.modules['pandas'].__file__)
 
     response = agent.run(f"Plan a trip to {destination} for {number_of_people} people from {start_date} to {end_date} and prepare a custom itenary in the given format. They are currently in {location} and want to travel by {mode_of_transport} for {purpose}. Divide the budget of {budget} accordingly.")
     # GradioUI(agent).launch()
@@ -173,4 +174,13 @@ def Main(destination, start_date, end_date, number_of_people, purpose, budget, l
 
 
 if __name__=="__main__":
-    Main()
+    Main(
+        destination="Goa",
+        start_date="2025-04-01",
+        end_date="2025-04-05",
+        number_of_people=2,
+        purpose="vacation",
+        budget="20000",
+        location="Mumbai",
+        mode_of_transport="flight"
+    )
