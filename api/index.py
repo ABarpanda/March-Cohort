@@ -3,6 +3,7 @@ import os
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+import uvicorn
 import logging
 import json
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -108,3 +109,7 @@ async def get_itinerary(
             status_code=500,
             detail="Failed to generate itinerary"
         )
+
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 8000))  # Railway assigns PORT dynamically
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
