@@ -50,11 +50,11 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"message": "Internal Server Error"}
     )
 
-@app.get("/")
+@app.get("/", methods=["GET", "HEAD"])
 def read_root():
     return {"message": "Welcome to the Om tours API!"}
 
-@app.get("/itinerary/", response_model=dict)
+@app.get("/itinerary/", response_model=dict, methods=["GET", "HEAD"])
 async def get_itinerary(
     destination: str,
     start_date: str,
