@@ -164,7 +164,8 @@ def Main(destination, start_date, end_date, number_of_people, purpose, budget, l
     with open("final_output.json","r") as file:
         itenary_json = file.read()
     
-    print(itenary_json)
+    print("Itenary json:", itenary_json)
+    print("Type of itenary json:", type(itenary_json))
     if type(itenary_json)==str:
         print("string",json.loads(itenary_json))
     elif type(itenary_json)==dict:
