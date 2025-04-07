@@ -140,10 +140,10 @@
      - Recommend transport modes (flight/train/bus/driving)
      - Estimate costs for each option
   2. Budget splitting must include:
-     - Transportation (40%)
-     - Accommodation (30%) 
-     - Activities/Food (20%)
-     - Contingency (10%)
+     - Transportation
+     - Accommodation
+     - Activities/Food
+     - Contingency
   3. Always show comparisons when multiple transport options exist
 
   REQUIRED OUTPUT FORMAT:
