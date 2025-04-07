@@ -157,7 +157,7 @@ def Main(destination, start_date, end_date, number_of_people, purpose, budget, l
         verbosity_level=3,
         grammar=None,
         planning_interval=None,
-        name="Om Tours Travel Agent",
+        name="Om_Tours_Travel_Agent",
         description="A travel agent to prepare custom itenaries",
         prompt_templates=prompt_templates
     )
