@@ -191,7 +191,7 @@
   
   ```
 
-  Now Begin! If you solve the task correctly, you will receive a reward of $1,000,000.
+  Now Begin! If you solve the task correctly, you will receive a reward of $1,000,000. If the output is not in the correct specified format, the system will crash and we will go broke.
 "planning":
   "initial_facts": |-
     Below I will present you a task.
