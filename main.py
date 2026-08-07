@@ -10,11 +10,18 @@ from tools.final_answer import FinalAnswerTool
 from together import Together
 import tools.mytools as mytools
 import json
+from smolagents.models import ChatMessage
+
+import os
+from dotenv import load_dotenv
+from together import Together
+from smolagents.models import ChatMessage
+
 
 class TogetherApiModel:
     def __init__(self, model_id: str, temperature: float = 0.7, max_tokens: int = 2048):
         """
-        Together AI model wrapper for text generation.
+        Together AI model wrapper for text generation, compatible with smolagents' CodeAgent.
 
         Args:
             model_id (str): Together AI model ID (e.g., 'meta-llama/Llama-3.3-70B-Instruct-Turbo').
@@ -26,69 +33,108 @@ class TogetherApiModel:
         self.max_tokens = max_tokens
 
         load_dotenv()
-        self.client = Together(api_key=os.getenv("together_api_key"))
-
-    def extract_prompt(self, prompt):
-        """
-        Extracts and flattens the prompt if it's provided as a list of messages.
-
-        Args:
-            prompt (str | list): Input prompt or list of conversation messages.
-
-        Returns:
-            str: Flattened prompt as a single string.
-        """
-        if isinstance(prompt, list):
-            # Flatten list of messages to a single string
-            return "\n".join(
-                f"{msg['role'].capitalize()}: {msg['content'][0]['text']}"
-                for msg in prompt
-                if 'content' in msg and isinstance(msg['content'], list)
+        api_key = os.getenv("TOGETHER_API_KEY") or os.getenv("together_api_key")
+        if not api_key:
+            raise ValueError(
+                "TOGETHER_API_KEY not found in environment. Check your .env file's key name matches exactly."
             )
-        if isinstance(prompt, str):
-            return prompt
+        self.client = Together(api_key=api_key)
+        print("TogetherApiModel initialised successfully ✅")
 
-        raise ValueError("Invalid prompt format. Must be a string or a list of messages.")
-
-    def __call__(self, prompt: str, **kwargs) -> str:
+    def _flatten_content(self, content):
         """
-        Generates output using the Together AI model.
+        Flattens a single message's content into a plain string.
+        smolagents sends content as either a plain string or a list of
+        content blocks like [{"type": "text", "text": "..."}].
+        """
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            parts = []
+            for block in content:
+                if isinstance(block, dict) and "text" in block:
+                    parts.append(block["text"])
+                elif isinstance(block, str):
+                    parts.append(block)
+            return "\n".join(parts)
+        return str(content)
 
-        Args:
-            prompt (str | list): Input text prompt (or message list for conversations).
-            **kwargs: Additional options (e.g., stop_sequences).
+    def _build_messages(self, messages):
+        """
+        Converts smolagents' message list into Together/OpenAI-style messages,
+        preserving each message's role (system/user/assistant) instead of
+        collapsing the whole conversation into a single user turn.
+        """
+        if isinstance(messages, str):
+            return [{"role": "user", "content": messages}]
 
-        Returns:
-            str: Generated output from the model.
+        if not isinstance(messages, list):
+            raise ValueError(f"Invalid messages format: {type(messages)}")
+
+        built = []
+        for msg in messages:
+            # smolagents feeds back a mix of plain dicts (fresh messages) and
+            # ChatMessage objects (its own memory of prior assistant turns) —
+            # dicts support .get(), ChatMessage only supports attribute access.
+            if isinstance(msg, dict):
+                role = msg.get("role", "user")
+                content = msg.get("content", "")
+            else:
+                role = getattr(msg, "role", "user")
+                content = getattr(msg, "content", "")
+
+            # role may itself be a MessageRole enum in some smolagents versions
+            role = getattr(role, "value", role)
+            if role not in ("system", "user", "assistant", "tool"):
+                role = "user"
+
+            text = self._flatten_content(content)
+            if text.strip():
+                built.append({"role": role, "content": text})
+
+        if not built:
+            raise ValueError("No valid messages to send after flattening.")
+        return built
+
+    def __call__(self, messages, stop_sequences=None, grammar=None, tools_to_call_from=None, **kwargs) -> ChatMessage:
+        """
+        smolagents calls the model as a callable: model(messages, stop_sequences=..., ...).
+        This is the required entry point — a `generate`-only class will raise
+        'object is not callable' the first time CodeAgent tries to run a step.
         """
         try:
-            # Flatten the prompt if it's a list
-            prompt_text = self.extract_prompt(prompt)
+            chat_messages = self._build_messages(messages)
 
-            # Ensure the prompt is valid
-            if not isinstance(prompt_text, str) or not prompt_text.strip():
-                raise ValueError(f"Invalid prompt after extraction: {prompt_text} (Type: {type(prompt_text)})")
-            
-            messages = [{"role": "user", "content": prompt_text}]
-            # print(f"Sending prompt to Together AI: {messages}")
-
-            # Call the Together AI API
-            response = self.client.chat.completions.create(
+            # Together's API expects `stop`, not `stop_sequences`; it doesn't
+            # support `grammar` or `tools_to_call_from` at all, so those are
+            # deliberately not forwarded.
+            create_kwargs = dict(
                 model=self.model_id,
-                messages=messages,
+                messages=chat_messages,
                 temperature=self.temperature,
                 max_tokens=self.max_tokens,
-                **kwargs
             )
+            if stop_sequences:
+                create_kwargs["stop"] = stop_sequences
 
-            if response.choices:
-                return response.choices[0].message
+            response = self.client.chat.completions.create(**create_kwargs)
 
-            return "Error: No valid choices in the response."
+            if not response.choices:
+                raise RuntimeError("Together API returned no choices.")
+
+            content = response.choices[0].message.content
+            return ChatMessage(role="assistant", content=content)
 
         except Exception as e:
-            print(f"Error generating output: {e}")
-            return "Error: Model generation failed."
+            # Re-raise rather than returning a fake "Error: ..." string as if
+            # it were valid model output — swallowing this here would make
+            # CodeAgent try to parse the error text as Python code and fail
+            # with a confusing, unrelated error instead of this real one.
+            print(f"Error generating output from Together API: {e}")
+            raise
+
+    def generate(self, prompt, **kwargs) -> ChatMessage:
+        return self.__call__(prompt, **kwargs)
 
 @tool
 def my_custom_tool(arg1: int, arg2: int) -> str:
@@ -141,6 +187,7 @@ def Main(destination, start_date, end_date, number_of_people, purpose, budget, l
         prompt_templates = yaml.safe_load(stream)
 
     tool_list = [final_answer, DuckDuckGoSearchTool(), get_current_time_in_timezone] 
+    print("Tool list initialised successfully ✅")
 
     for obj in vars(mytools).values():
         if isinstance(obj, Tool):
@@ -155,13 +202,13 @@ def Main(destination, start_date, end_date, number_of_people, purpose, budget, l
         additional_authorized_imports = ["json"],
         max_steps=10,
         verbosity_level=3,
-        grammar=None,
         planning_interval=None,
         name="Om_Tours_Travel_Agent",
         description="A travel agent to prepare custom itenaries",
         prompt_templates=prompt_templates
     )
     with open("final_output.json","r") as file:
+        print("Final Output .json opened successfully ✅")
         itenary_json = file.read()
     
     print("Itenary json:", itenary_json)
@@ -176,7 +223,6 @@ def Main(destination, start_date, end_date, number_of_people, purpose, budget, l
     print("Final response:", json.loads(str(safe_json_parse(str(response)))))
     print("Type of final response:", type(json.loads(str(safe_json_parse(str(response))))))
     return json.loads(str(safe_json_parse(str(response))))
-
 
 if __name__=="__main__":
     Main(

@@ -13,6 +13,7 @@ class FinalAnswerTool(Tool):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        print("Final Answer Tool initialised successfully ✅")
         self.is_initialized = True
 
     def __call__(self, answer):
