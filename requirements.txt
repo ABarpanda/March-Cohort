@@ -1,0 +1,8 @@
+﻿markdownify
+smolagents
+requests
+ddgs
+fastapi
+uvicorn
+together==1.5.4
+pytz
