@@ -6,7 +6,7 @@ import os
 from dotenv import load_dotenv
 
 @tool
-def multiply_two_numbers(arg1:int, arg2:int)-> str: #it's import to specify the return type
+def multiply_two_numbers(arg1:int, arg2:int)-> int: #it's import to specify the return type
     #Keep this format for the description / args / args description but feel free to modify the tool
     """A tool that multiplies 2 numbers
     Args:
@@ -17,7 +17,7 @@ def multiply_two_numbers(arg1:int, arg2:int)-> str: #it's import to specify the 
 
 #region #! Weather API Tools
 @tool
-def next_seven_day_forecast(lat: float, long: float) -> list:
+def next_seven_day_forecast(lat: float, long: float) -> list | dict:
     """Fetches the weather forecast for the next seven days.
 
     Args:
@@ -59,7 +59,7 @@ def next_seven_day_forecast(lat: float, long: float) -> list:
     return {"error": "Unable to fetch data", "status_code": response.status_code}
 
 @tool
-def one_day_forecast(lat: float, long: float, target_date: str) -> list:
+def one_day_forecast(lat: float, long: float, target_date: str) -> list | dict:
     """Fetches the weather forecast for a specific date.
 
     Args:
